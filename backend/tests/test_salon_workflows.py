@@ -34,7 +34,7 @@ def test_health_check():
     assert res.status_code == 200
     data = res.json()
     assert data["status"] == "healthy"
-    assert data["database_schema"] == "salon"
+    assert "service" in data
 
 def test_auth_login():
     res = client.post("/api/v1/auth/login", json={

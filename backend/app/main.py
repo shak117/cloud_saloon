@@ -29,11 +29,16 @@ async def lifespan(app: FastAPI):
     yield
     logger.info("Cloud Salon API shutting down cleanly.")
 
+is_prod = settings.ENVIRONMENT.lower() == "production"
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Cloud Salon — Premium Multi-Tenant Salon Billing & Management SaaS by Cloud Technologies",
     version=settings.VERSION,
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url=None if is_prod else "/docs",
+    redoc_url=None if is_prod else "/redoc",
+    openapi_url=None if is_prod else "/openapi.json"
 )
 
 # CORS middleware for React Vite Frontend
@@ -67,10 +72,7 @@ def health_check():
     return {
         "status": "healthy",
         "service": settings.PROJECT_NAME,
-        "company": settings.COMPANY_NAME,
-        "version": settings.VERSION,
-        "pilot_tenant": settings.PILOT_TENANT_ID,
-        "database_schema": settings.DB_SCHEMA
+        "version": settings.VERSION
     }
 
 @app.get("/")
