@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: cloud_salon_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cloudbilling}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_in_production_password}
+      POSTGRES_DB: ${POSTGRES_DB:-cloud_billing}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_salon_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cloudbilling} -d ${POSTGRES_DB:-cloud_billing}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cloud_salon_api
+    restart: always
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://${POSTGRES_USER:-cloudbilling}:${POSTGRES_PASSWORD:-change_in_production_password}@db:5432/${POSTGRES_DB:-cloud_billing}}
+      DB_SCHEMA: ${DB_SCHEMA:-salon}
+      SECRET_KEY: ${SECRET_KEY:-change-this-to-a-secure-random-32-char-string-in-production}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      PORT: 8001
+      HOST: 0.0.0.0
+    ports:
+      - "8001:8001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cloud_salon_web
+    restart: always
+    ports:
+      - "5174:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_salon_data:
